@@ -910,8 +910,12 @@ def _do_send(settings: dict) -> None:
     summary = st.session_state.summary
     svc_w, svc_o = summary.services_totals
     cb_w, cb_o = summary.callbacks_totals
+    audit_path_override = os.environ.get("HSBC_SLA_AUDIT_LOG_PATH")
+    audit_path = Path(audit_path_override) if audit_path_override else (
+        ROOT / settings.get("audit_log_path", "audit_log.csv")
+    )
     audit.append_entry(
-        ROOT / settings.get("audit_log_path", "audit_log.csv"),
+        audit_path,
         {
             "user_email": result.user_email,
             "source_csv_sha256": st.session_state.source_sha or "",

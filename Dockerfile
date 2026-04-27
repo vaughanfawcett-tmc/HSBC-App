@@ -12,7 +12,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Persistent disk for token cache and audit log lives at /var/data on Render.
-ENV HSBC_SLA_TOKEN_DIR=/var/data/tokens
+ENV HSBC_SLA_TOKEN_DIR=/var/data/tokens \
+    HSBC_SLA_AUDIT_LOG_PATH=/var/data/audit_log.csv
 
 EXPOSE 8501
 
