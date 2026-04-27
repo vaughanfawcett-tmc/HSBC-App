@@ -1,0 +1,45 @@
+# Everything non-mapping lives here. Editable by non-developers.
+# Placeholders must be confirmed with Bethany / Harrison during setup.
+
+email:
+  # The HSBC contact who receives the monthly report.
+  recipient: "andrewmaher@hsbc.com"
+  cc: []
+  # Displayed in UI confirmation only; actual From is Bethany's mailbox.
+  sender_display_name: "Bethany @ Miles Consultancy"
+  subject_template: "HSBC SLA Report — {month_label}"
+  body_template: |
+    Hi Andrew,
+
+    Please find attached the HSBC SLA report for {month_label}.
+
+    Best regards,
+    Bethany
+
+  # Set to true for first-time end-to-end test. When true, the UI sends to
+  # test_recipient instead of recipient, and shows a banner.
+  test_mode: true
+  test_recipient: ""   # e.g. "bethany@milesconsultancy.co.uk"
+
+filters:
+  # Groups to exclude from the Services section (applied before client
+  # assignment). "Updates" is the DVLA automated stream — confirmed in brief.
+  exclude_groups:
+    - "Updates"
+
+  # Rule that identifies a "Call back" ticket. The services rule is applied
+  # FIRST — callbacks are picked OUT of the remaining pool.
+  # TODO: confirm with Bethany which Group or Subject pattern she uses.
+  callback_rule:
+    field: "Subject"
+    match: ".*call\\s*back.*"
+
+# Which CSV column identifies the sender — used when listing unmapped rows
+# back to the reviewer. "Full name" is the default; switch to "Contact ID"
+# if Bethany says email is more reliable.
+identifier_field: "Full name"
+
+# File paths are relative to the project root.
+template_path: "templates/HSBC_SLA_template.xlsx"
+output_dir: "output"
+audit_log_path: "audit_log.csv"

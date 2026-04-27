@@ -1,0 +1,507 @@
+# Map a Fresh CRM ticket to an HSBC-report client.
+#
+# For each ticket the processor walks the list top-down and assigns the first
+# client whose any rule matches. Unmatched rows land in an <UNMAPPED> bucket
+# and the UI asks the reviewer to edit this file.
+#
+# Rule shape:
+#   - field: the CSV column to check (case-sensitive column name)
+#   - match: a regex (case-insensitive, .* needed for "contains")
+#
+# Editable by non-developers. Keep one entry per client row in the template.
+# The `name` MUST match column B of the template exactly.
+#
+# IMPORTANT: the starter rules below are placeholders seeded from the March
+# 2026 CSV's email domains. They must be confirmed with Bethany during the
+# setup interview — see README.md "Setup interview".
+
+clients:
+  - name: "**ArdexandBA**"
+    rules:
+      - field: "Full name"
+        match: ".*ardex.*"
+      - field: "Contact ID"
+        match: ".*@(ardex|ba-group)\\."
+
+  - name: "4Com"
+    rules:
+      - field: "Full name"
+        match: ".*4com.*"
+      - field: "Contact ID"
+        match: ".*@4com\\."
+
+  - name: "Adcock Refrigeration Ltd"
+    rules:
+      - field: "Full name"
+        match: ".*adcock.*"
+      - field: "Contact ID"
+        match: ".*@adcock\\."
+
+  - name: "Airnov Healthcare Packaging"
+    rules:
+      - field: "Full name"
+        match: ".*airnov.*"
+      - field: "Contact ID"
+        match: ".*@airnov\\."
+
+  - name: "Anglia Components"
+    rules:
+      - field: "Full name"
+        match: ".*anglia\\s*components.*"
+      - field: "Contact ID"
+        match: ".*@anglia-?components\\."
+
+  - name: "Ashfield Healthcare"
+    rules:
+      - field: "Full name"
+        match: ".*ashfield.*"
+      - field: "Contact ID"
+        match: ".*@(ashfield|syneoshealth)\\."
+
+  - name: "Beko"
+    rules:
+      - field: "Full name"
+        match: ".*\\bbeko\\b.*"
+      - field: "Contact ID"
+        match: ".*@beko\\."
+
+  - name: "Brayleys Cars Limited"
+    rules:
+      - field: "Full name"
+        match: ".*brayley.*"
+      - field: "Contact ID"
+        match: ".*@brayley.*\\."
+
+  - name: "Building Adhesives Limited"
+    rules:
+      - field: "Full name"
+        match: ".*building\\s*adhesives.*"
+      - field: "Contact ID"
+        match: ".*@buildingadhesives\\."
+
+  - name: "C Spencer LTD"
+    rules:
+      - field: "Full name"
+        match: ".*c\\s*spencer.*"
+      - field: "Contact ID"
+        match: ".*@cspencer\\."
+
+  - name: "CDA Group"
+    rules:
+      - field: "Full name"
+        match: ".*\\bcda\\b.*"
+      - field: "Contact ID"
+        match: ".*@cda-?group\\."
+
+  - name: "Checkit Plc"
+    rules:
+      - field: "Full name"
+        match: ".*checkit.*"
+      - field: "Contact ID"
+        match: ".*@checkit\\."
+
+  - name: "Chep UK limited"
+    rules:
+      - field: "Full name"
+        match: ".*\\bchep\\b.*"
+      - field: "Contact ID"
+        match: ".*@chep\\."
+
+  - name: "Chivas Brothers"
+    rules:
+      - field: "Full name"
+        match: ".*chivas.*"
+      - field: "Contact ID"
+        match: ".*@chivas.*"
+
+  - name: "Close Bros"
+    rules:
+      - field: "Full name"
+        match: ".*close\\s*bros.*"
+      - field: "Contact ID"
+        match: ".*@closebrothers\\."
+
+  - name: "Crossroads & Hartshorne"
+    rules:
+      - field: "Full name"
+        match: ".*(crossroads|hartshorne).*"
+      - field: "Contact ID"
+        match: ".*@(crossroads|hartshorne)\\."
+
+  - name: "Crown Lift Trucks"
+    rules:
+      - field: "Full name"
+        match: ".*crown.*lift.*"
+      - field: "Contact ID"
+        match: ".*@crown\\."
+
+  - name: "Epson UK"
+    rules:
+      - field: "Contact ID"
+        match: ".*@epson\\.co\\.uk"
+      - field: "Contact ID"
+        match: ".*@epson-uk\\."
+
+  - name: "Epson International"
+    rules:
+      - field: "Contact ID"
+        match: ".*@epson\\.(?!co\\.uk)[a-z.]+"
+
+  - name: "Exponential-E"
+    rules:
+      - field: "Full name"
+        match: ".*exponential.*"
+      - field: "Contact ID"
+        match: ".*@exponential-?e\\."
+
+  - name: "FK Group"
+    rules:
+      - field: "Full name"
+        match: ".*\\bfk\\s*group\\b.*"
+      - field: "Contact ID"
+        match: ".*@fkgroup\\."
+
+  - name: "Footasylum"
+    rules:
+      - field: "Full name"
+        match: ".*footasylum.*"
+      - field: "Contact ID"
+        match: ".*@footasylum\\."
+
+  - name: "FSH Group"
+    rules:
+      - field: "Full name"
+        match: ".*\\bfsh\\b.*"
+      - field: "Contact ID"
+        match: ".*@fshgroup\\."
+
+  - name: "Geberit"
+    rules:
+      - field: "Full name"
+        match: ".*geberit.*"
+      - field: "Contact ID"
+        match: ".*@geberit\\."
+
+  - name: "GXO Logistics UK"
+    rules:
+      - field: "Full name"
+        match: ".*\\bgxo\\b.*"
+      - field: "Contact ID"
+        match: ".*@gxo\\."
+
+  - name: "Harrison Catering"
+    rules:
+      - field: "Full name"
+        match: ".*harrison\\s*catering.*"
+      - field: "Contact ID"
+        match: ".*@harrisoncatering\\."
+
+  - name: "Healthcare at Home"
+    rules:
+      - field: "Full name"
+        match: ".*healthcare\\s*at\\s*home.*"
+      - field: "Contact ID"
+        match: ".*@hah\\.co\\.uk|.*@healthcareathome\\."
+
+  - name: "Hitachi Vantara"
+    rules:
+      - field: "Full name"
+        match: ".*hitachi.*vantara.*"
+      - field: "Contact ID"
+        match: ".*@hitachivantara\\."
+
+  # Honeywell UK and International are split by a well-known sub-domain
+  # convention on fleetlogistics.com — confirmed in the build brief.
+  - name: "Honeywell UK"
+    rules:
+      - field: "Contact ID"
+        match: "honeywell\\.uk@fleetlogistics\\.com"
+
+  - name: "Honeywell International"
+    rules:
+      - field: "Contact ID"
+        match: "honeywell\\.(?!uk@)[a-z]{2,3}@fleetlogistics\\.com"
+      - field: "Contact ID"
+        match: ".*@honeywell\\."
+
+  - name: "HSS Hire"
+    rules:
+      - field: "Full name"
+        match: ".*\\bhss\\b.*"
+      - field: "Contact ID"
+        match: ".*@hss-?hire\\."
+
+  - name: "Hugh Steeper LTD"
+    rules:
+      - field: "Full name"
+        match: ".*hugh\\s*steeper.*"
+      - field: "Contact ID"
+        match: ".*@steepergroup\\."
+
+  - name: "JACOBS DOUWE EGBERTS GB LTD"
+    rules:
+      - field: "Full name"
+        match: ".*(jacobs.*douwe|\\bjde\\b).*"
+      - field: "Contact ID"
+        match: ".*@jdecoffee\\.|.*@jacobsdouweegberts\\."
+
+  - name: "Karcher"
+    rules:
+      - field: "Full name"
+        match: ".*k(a|ä)rcher.*"
+      - field: "Contact ID"
+        match: ".*@karcher\\."
+
+  - name: "Kohler Mira"
+    rules:
+      - field: "Full name"
+        match: ".*(kohler|mira).*"
+      - field: "Contact ID"
+        match: ".*@(kohler|mirashowers)\\."
+
+  - name: "Lloyd"
+    rules:
+      - field: "Full name"
+        match: ".*\\blloyd\\b.*"
+      - field: "Contact ID"
+        match: ".*@lloydltd\\."
+
+  - name: "Lyreco"
+    rules:
+      - field: "Full name"
+        match: ".*lyreco.*"
+      - field: "Contact ID"
+        match: ".*@lyreco\\."
+
+  - name: "M&D Foundations & Building Services Limited"
+    rules:
+      - field: "Full name"
+        match: ".*\\bm\\s*&\\s*d\\b.*"
+      - field: "Contact ID"
+        match: ".*@mdfoundations\\."
+
+  - name: "Medicareplus International Ltd."
+    rules:
+      - field: "Full name"
+        match: ".*medicareplus.*"
+      - field: "Contact ID"
+        match: ".*@medicareplus\\."
+
+  - name: "Miele"
+    rules:
+      - field: "Full name"
+        match: ".*\\bmiele\\b.*"
+      - field: "Contact ID"
+        match: ".*@miele\\."
+
+  - name: "Moto Novo"
+    rules:
+      - field: "Full name"
+        match: ".*moto\\s*novo.*"
+      - field: "Contact ID"
+        match: ".*@motonovo\\."
+
+  - name: "MPB Structures Ltd"
+    rules:
+      - field: "Full name"
+        match: ".*\\bmpb\\b.*"
+      - field: "Contact ID"
+        match: ".*@mpbstructures\\."
+
+  - name: "NCS Group"
+    rules:
+      - field: "Full name"
+        match: ".*\\bncs\\b.*"
+      - field: "Contact ID"
+        match: ".*@ncsgroup\\."
+
+  - name: "New Look"
+    rules:
+      - field: "Full name"
+        match: ".*new\\s*look.*"
+      - field: "Contact ID"
+        match: ".*@newlook\\."
+
+  - name: "NHBC"
+    rules:
+      - field: "Full name"
+        match: ".*\\bnhbc\\b.*"
+      - field: "Contact ID"
+        match: ".*@nhbc\\."
+      - field: "Group"
+        match: "^NHBC$"
+
+  - name: "Nordex Ltd."
+    rules:
+      - field: "Full name"
+        match: ".*\\bnordex\\b.*"
+      - field: "Contact ID"
+        match: ".*@nordex.*"
+
+  - name: "Novo Nordisk"
+    rules:
+      - field: "Full name"
+        match: ".*novo\\s*nordisk.*"
+      - field: "Contact ID"
+        match: ".*@novonordisk\\."
+
+  - name: "NSHI"
+    rules:
+      - field: "Full name"
+        match: ".*\\bnshi\\b.*"
+      - field: "Contact ID"
+        match: ".*@nshi\\."
+
+  - name: "OC Davies"
+    rules:
+      - field: "Full name"
+        match: ".*\\b(o\\.?\\s*c\\.?\\s*davies)\\b.*"
+      - field: "Contact ID"
+        match: ".*@ocdavies\\."
+
+  - name: "Peri Ltd"
+    rules:
+      - field: "Full name"
+        match: ".*\\bperi\\b.*"
+      - field: "Contact ID"
+        match: ".*@peri\\."
+
+  - name: "Pernod-Ricard UK"
+    rules:
+      - field: "Full name"
+        match: ".*pernod.*ricard.*"
+      - field: "Contact ID"
+        match: ".*@pernod-?ricard\\."
+
+  - name: "Phase Electrical"
+    rules:
+      - field: "Full name"
+        match: ".*phase\\s*electrical.*"
+      - field: "Contact ID"
+        match: ".*@phaseelectrical\\."
+
+  - name: "Premier Foods"
+    rules:
+      - field: "Full name"
+        match: ".*premier\\s*foods.*"
+      - field: "Contact ID"
+        match: ".*@premierfoods\\."
+
+  - name: "Real Time Communications"
+    rules:
+      - field: "Full name"
+        match: ".*real\\s*time\\s*communications.*"
+      - field: "Contact ID"
+        match: ".*@realtimecomms\\."
+
+  - name: "Revium Group"
+    rules:
+      - field: "Full name"
+        match: ".*revium.*"
+      - field: "Contact ID"
+        match: ".*@revium\\."
+
+  - name: "Rocksteady Music School"
+    rules:
+      - field: "Full name"
+        match: ".*rocksteady.*"
+      - field: "Contact ID"
+        match: ".*@rocksteadymusicschool\\."
+
+  - name: "Salus-Tech"
+    rules:
+      - field: "Full name"
+        match: ".*salus.*"
+      - field: "Contact ID"
+        match: ".*@salus-?tech\\."
+
+  - name: "St Leonards Motors Ltd"
+    rules:
+      - field: "Full name"
+        match: ".*st\\.?\\s*leonard.*"
+      - field: "Contact ID"
+        match: ".*@stleonardsmotors\\."
+
+  - name: "Stannah"
+    rules:
+      - field: "Full name"
+        match: ".*stannah.*"
+      - field: "Contact ID"
+        match: ".*@stannah\\."
+
+  - name: "Stark Connect Ltd"
+    rules:
+      - field: "Full name"
+        match: ".*stark\\s*connect.*"
+      - field: "Contact ID"
+        match: ".*@starkconnect\\."
+
+  - name: "Steria"
+    rules:
+      - field: "Full name"
+        match: ".*\\bsteria\\b.*"
+      - field: "Contact ID"
+        match: ".*@(sopra)?steria\\."
+
+  - name: "Sto Ltd"
+    rules:
+      - field: "Full name"
+        match: ".*\\bsto\\s+ltd\\b.*"
+      - field: "Contact ID"
+        match: ".*@sto\\."
+
+  - name: "Stokers Ltd"
+    rules:
+      - field: "Full name"
+        match: ".*stokers.*"
+      - field: "Contact ID"
+        match: ".*@stokers\\."
+
+  - name: "The Frasers Group"
+    rules:
+      - field: "Full name"
+        match: ".*frasers\\s*group.*"
+      - field: "Contact ID"
+        match: ".*@frasers\\."
+
+  - name: "Tri Wall"
+    rules:
+      - field: "Full name"
+        match: ".*tri\\s*wall.*"
+      - field: "Contact ID"
+        match: ".*@tri-?wall\\."
+
+  - name: "TMC"
+    rules:
+      - field: "Full name"
+        match: ".*\\btmc\\b.*"
+      - field: "Contact ID"
+        match: ".*@tmc\\.co\\.uk"
+
+  - name: "UK Power Networks"
+    rules:
+      - field: "Full name"
+        match: ".*uk\\s*power\\s*networks.*"
+      - field: "Contact ID"
+        match: ".*@ukpowernetworks\\."
+
+  - name: "Vinci Fleet Services"
+    rules:
+      - field: "Full name"
+        match: ".*vinci.*"
+      - field: "Contact ID"
+        match: ".*@vinci.*"
+
+  - name: "VP PLC"
+    rules:
+      - field: "Full name"
+        match: ".*\\bvp\\s*plc\\b.*"
+      - field: "Contact ID"
+        match: ".*@vpplc\\."
+
+  - name: "YOUFIBRE LIMITED"
+    rules:
+      - field: "Full name"
+        match: ".*youfibre.*"
+      - field: "Contact ID"
+        match: ".*@youfibre\\."

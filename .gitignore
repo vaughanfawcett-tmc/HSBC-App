@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+audit_log.csv
+output/
+*.token.bin
+.DS_Store
+
+# Local-only binaries
+cloudflared
+*.bin

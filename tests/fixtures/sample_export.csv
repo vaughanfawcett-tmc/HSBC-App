@@ -1,0 +1,11 @@
+Ticket ID,Subject,Status,Agent,Group,Created time,Due by Time,Resolved time,Closed time,Last update time,Initial response time,First response time (in hrs),Resolution time (in hrs),Resolution status,First response status,Every response status,Full name,Contact ID,Country
+1001,Conversation with Kelly,Closed,Yasmine,Customer Service Team,2026-03-01 01:52:23,,,,,,,,Within SLA,Within SLA,Within SLA,"Smith, Kelly (HONEYWELL UK)",honeywell.uk@fleetlogistics.com,
+1002,Translating email,Closed,Yasmine,International Team,2026-03-02 01:52:23,,,,,,,,SLA Violated,,,"Muller, Hans (HONEYWELL DE)",honeywell.de@fleetlogistics.com,
+1003,Fuel card update,Closed,Matt,TMC Fuel,2026-03-03 09:00:00,,,,,,,,Within SLA,,,"Jones, Sarah (ASHFIELD)",sarah.jones@syneoshealth.com,
+1004,Stopped updates,Closed,Auto,Updates,2026-03-04 09:00:00,,,,,,,,Within SLA,,,"DVLA Updates",no-reply@dvla.gov.uk,
+1005,Callback request,Closed,Matt,Customer Service Team,2026-03-05 09:00:00,,,,,,,,Within SLA,,,"Jones, Sarah (ASHFIELD)",sarah.jones@syneoshealth.com,
+1006,Subject with callback and honeywell uk,Closed,Matt,Customer Service Team,2026-03-06 09:00:00,,,,,,,,SLA Violated,,,"Anon, A (HONEYWELL UK)",honeywell.uk@fleetlogistics.com,
+1007,Lyreco invoice question,Closed,Matt,Customer Service Team,2026-03-07 09:00:00,,,,,,,,Within SLA,,,"Dupont, Pierre (Lyreco FR)",pierre.dupont@lyreco.com,
+1008,Fraser customer issue,Closed,Matt,Customer Service Team,2026-03-08 09:00:00,,,,,,,,Within SLA,,,"A. Person",unknown@somewhere.com,
+1009,Blank status row,Closed,Matt,Customer Service Team,2026-03-09 09:00:00,,,,,,,,,,,"Honest, Mike (HONEYWELL UK)",honeywell.uk@fleetlogistics.com,
+1010,Regular service request,Closed,Matt,Customer Service Team,2026-03-10 09:00:00,,,,,,,,Within SLA,,,"X. User",stranger@nowhere.com,
