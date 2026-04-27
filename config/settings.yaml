@@ -5,8 +5,12 @@ email:
   # The HSBC contact who receives the monthly report.
   recipient: "andrewmaher@hsbc.com"
   cc: []
-  # Displayed in UI confirmation only; actual From is Bethany's mailbox.
-  sender_display_name: "Bethany @ Miles Consultancy"
+  # The mailbox the app sends FROM. Whoever signs in via the device-code
+  # prompt MUST match this address — if not, the app refuses to send. This
+  # stops a colleague accidentally signing in as themselves on the shared URL
+  # and the email going from the wrong account.
+  expected_sender_email: "bethany.howden@tmc.co.uk"
+  sender_display_name: "Bethany Howden, TMC"
   subject_template: "HSBC SLA Report — {month_label}"
   body_template: |
     Hi Andrew,
@@ -16,10 +20,10 @@ email:
     Best regards,
     Bethany
 
-  # Set to true for first-time end-to-end test. When true, the UI sends to
-  # test_recipient instead of recipient, and shows a banner.
+  # Test mode reroutes every send to test_recipient. Flip to false on launch
+  # day; until then, all sends go to test_recipient regardless of `recipient`.
   test_mode: true
-  test_recipient: ""   # e.g. "bethany@milesconsultancy.co.uk"
+  test_recipient: "vaughanfawcett1@gmail.com"
 
 filters:
   # Groups to exclude from the Services section (applied before client

@@ -33,7 +33,7 @@ DEFAULT_CLIENT_ID = os.environ.get(
     "HSBC_SLA_CLIENT_ID", "14d82eec-204b-4c2f-b7e8-296a70dab67e"
 )
 
-TOKEN_DIR = Path.home() / ".hsbc_sla_tool"
+TOKEN_DIR = Path(os.environ.get("HSBC_SLA_TOKEN_DIR", Path.home() / ".hsbc_sla_tool"))
 TOKEN_FILE = TOKEN_DIR / "token.bin"
 
 

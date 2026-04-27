@@ -7,7 +7,9 @@ Three screens, one thing on screen at a time:
 """
 from __future__ import annotations
 
+import hmac
 import io
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -874,6 +876,19 @@ def _do_send(settings: dict) -> None:
 
     try:
         token = mailer.acquire_token(interactive_callback=_show_code)
+        expected_sender = (email_cfg.get("expected_sender_email") or "").strip().lower()
+        if expected_sender:
+            me = mailer.current_user(token)
+            who = (me.get("mail") or me.get("userPrincipalName") or "").strip().lower()
+            if who != expected_sender:
+                st.session_state.send_error = (
+                    f"Signed in as {who or '(unknown)'}, but this app is "
+                    f"configured to send only as {expected_sender}. Sign out, "
+                    f"then sign back in as {expected_sender}."
+                )
+                st.session_state.device_flow_msg = None
+                st.rerun()
+                return
         result = mailer.send_mail(
             token=token,
             recipient=recipient,
@@ -943,6 +958,48 @@ def screen_done() -> None:
         if st.button("Start new report", type="primary", use_container_width=True):
             _reset()
             st.rerun()
+
+
+# ---------- access gate ----------
+def _check_password() -> bool:
+    """Block the app behind a shared password set via APP_PASSWORD env var.
+    Returns True when the visitor is authenticated. When APP_PASSWORD is
+    unset (typical for local dev) the gate is open."""
+    expected = os.environ.get("APP_PASSWORD", "")
+    if not expected:
+        return True
+    if st.session_state.get("auth_ok"):
+        return True
+
+    st.markdown(
+        "<p class='hero-eyebrow'>HSBC · Internal</p>"
+        "<h1 class='hero-title'>SLA report</h1>"
+        "<p class='hero-sub'>Sign in with the shared password to continue.</p>",
+        unsafe_allow_html=True,
+    )
+    pwd = st.text_input(
+        "Password", type="password", key="pwd_input", label_visibility="collapsed",
+        placeholder="Password",
+    )
+    if st.button("Continue", type="primary", use_container_width=True, key="auth_btn"):
+        if hmac.compare_digest(pwd, expected):
+            st.session_state.auth_ok = True
+            st.session_state.pop("auth_error", None)
+            st.rerun()
+        else:
+            st.session_state.auth_error = "Incorrect password."
+            st.rerun()
+    if st.session_state.get("auth_error"):
+        st.markdown(
+            f"<div class='error-card'>{svg_error()}"
+            f"<div>{st.session_state.auth_error}</div></div>",
+            unsafe_allow_html=True,
+        )
+    return False
+
+
+if not _check_password():
+    st.stop()
 
 
 # ---------- router ----------

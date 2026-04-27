@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+output/
+audit_log.csv
+*.token.bin
+.DS_Store
+.git/
+.gitignore
+README.md
+run.bat
+cloudflared
+*.bin
+tests/
+conftest.py
+pytest.ini

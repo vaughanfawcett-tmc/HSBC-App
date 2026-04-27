@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: hsbc-sla-tool
+    runtime: docker
+    plan: starter            # always-on, ~$7/month — required so Bethany never hits a cold start
+    dockerfilePath: ./Dockerfile
+    region: frankfurt        # closest EU region to Miles
+    healthCheckPath: /_stcore/health
+    autoDeploy: true         # push to main → live in ~3 min
+    envVars:
+      - key: APP_PASSWORD
+        sync: false          # set in Render UI, never in git
+      - key: HSBC_SLA_CLIENT_ID
+        sync: false          # Miles's own Azure AD app id (optional; falls back to public client)
+      - key: HSBC_SLA_TOKEN_DIR
+        value: /var/data/tokens
+    disk:
+      name: hsbc-sla-data
+      mountPath: /var/data
+      sizeGB: 1              # ~$0.25/month — holds the cached M365 sign-in
