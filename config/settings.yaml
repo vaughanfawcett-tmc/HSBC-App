@@ -20,9 +20,9 @@ email:
     Best regards,
     Bethany
 
-  # Test mode reroutes every send to test_recipient. Flip to false on launch
-  # day; until then, all sends go to test_recipient regardless of `recipient`.
-  test_mode: true
+  # Test mode reroutes every send to test_recipient. PRODUCTION = false.
+  # Flip to true if you ever need to test against a non-HSBC mailbox again.
+  test_mode: false
   test_recipient: "vaughanfawcett1@gmail.com"
 
 filters:
