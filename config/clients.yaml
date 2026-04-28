@@ -4,9 +4,19 @@
 # client whose any rule matches. Unmatched rows land in an <UNMAPPED> bucket
 # and the UI asks the reviewer to edit this file.
 #
-# Rule shape:
-#   - field: the CSV column to check (case-sensitive column name)
-#   - match: a regex (case-insensitive, .* needed for "contains")
+# Each client supports two matching mechanisms — a row matches if EITHER one
+# fires:
+#
+#   rules:                                # regex against any column
+#     - field: "Full name"                # case-sensitive column name
+#       match: ".*honeywell.*"            # case-insensitive regex; .* for "contains"
+#
+#   domains:                              # cleaner, faster, far less brittle
+#     - "honeywell.com"                   # exact OR sub-domain (uk.honeywell.com matches)
+#     - "honeywell.co.uk"                 # one entry per known domain
+#
+# Use `domains` whenever the email's @-suffix uniquely identifies the client.
+# Use `rules` for everything else (Full name patterns, fallback, weird cases).
 #
 # Editable by non-developers. Keep one entry per client row in the template.
 # The `name` MUST match column B of the template exactly.
@@ -215,14 +225,18 @@ clients:
   - name: "Honeywell UK"
     rules:
       - field: "Contact ID"
-        match: "honeywell\\.uk@fleetlogistics\\.com"
+        match: "honeywell[._-]?uk@fleetlogistics\\.com"
+      - field: "Full name"
+        match: ".*\\bhoneywell\\b.*\\b(uk|gb|britain|england)\\b.*"
+    domains:
+      - "honeywell.co.uk"
 
   - name: "Honeywell International"
     rules:
       - field: "Contact ID"
         match: "honeywell\\.(?!uk@)[a-z]{2,3}@fleetlogistics\\.com"
-      - field: "Contact ID"
-        match: ".*@honeywell\\."
+    domains:
+      - "honeywell.com"
 
   - name: "HSS Hire"
     rules:
@@ -328,6 +342,9 @@ clients:
         match: ".*\\bnhbc\\b.*"
       - field: "Contact ID"
         match: ".*@nhbc\\."
+    domains:
+      - "nhbc.co.uk"
+      - "nhbc.com"
       - field: "Group"
         match: "^NHBC$"
 
@@ -475,8 +492,11 @@ clients:
     rules:
       - field: "Full name"
         match: ".*\\btmc\\b.*"
-      - field: "Contact ID"
-        match: ".*@tmc\\.co\\.uk"
+      - field: "Full name"
+        match: ".*\\bmiles\\s*consultancy\\b.*"
+    domains:
+      - "tmc.co.uk"
+      - "milesconsultancy.co.uk"
 
   - name: "UK Power Networks"
     rules:

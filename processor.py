@@ -34,6 +34,10 @@ class MatchRule:
 class ClientRule:
     name: str
     rules: tuple[MatchRule, ...]
+    # Lower-cased email domains. A row matches if its Contact ID's @-suffix
+    # matches any of these (e.g. "honeywell.com" matches "x@honeywell.com" AND
+    # "x@uk.honeywell.com"). Cheaper and far less brittle than regex name matches.
+    domains: tuple[str, ...] = ()
 
 
 @dataclass
@@ -83,7 +87,12 @@ def load_clients_config(path: str) -> list[ClientRule]:
             )
             for r in raw_rules
         )
-        out.append(ClientRule(name=name, rules=rules))
+        domains = tuple(
+            d.strip().lower().lstrip("@")
+            for d in (entry.get("domains") or [])
+            if isinstance(d, str) and d.strip()
+        )
+        out.append(ClientRule(name=name, rules=rules, domains=domains))
     return out
 
 
@@ -94,26 +103,53 @@ def load_settings(path: str) -> dict[str, Any]:
 
 # ---------- transformations ----------
 
+def _email_domain_series(df: pd.DataFrame) -> pd.Series:
+    """Lower-cased email domain extracted from Contact ID (the part after @).
+    Empty string when Contact ID is missing or has no @."""
+    if "Contact ID" not in df.columns:
+        return pd.Series([""] * len(df), index=df.index, dtype=object)
+    contact = df["Contact ID"].fillna("").astype(str).str.strip().str.lower()
+    return contact.str.extract(r"@([^@\s>]+)", expand=False).fillna("")
+
+
 def assign_client(df: pd.DataFrame, clients: list[ClientRule]) -> pd.DataFrame:
-    """Add a 'client' column to df. First matching rule wins.
+    """Add a 'client' column to df. First matching client wins.
+
+    Match priority for each client (cheapest signal first, most specific last):
+      1. Email domain match — Contact ID's @-suffix matches `domains` exactly,
+         OR is a sub-domain of one of them (e.g. uk.honeywell.com matches
+         honeywell.com).
+      2. Regex rule match — any rule's field/pattern matches.
 
     Unmatched rows get client = UNMAPPED.
     """
     out = df.copy()
     assigned = pd.Series([UNMAPPED] * len(out), index=out.index, dtype=object)
+    domain_series = _email_domain_series(out)
 
     for client in clients:
-        if not client.rules:
+        if not client.rules and not client.domains:
             continue
         still_unassigned = assigned == UNMAPPED
         if not still_unassigned.any():
             break
+
         mask = pd.Series([False] * len(out), index=out.index)
+
+        # 1) Domain match (exact OR sub-domain).
+        for d in client.domains:
+            d_clean = d.lower().lstrip("@").strip()
+            if not d_clean:
+                continue
+            mask = mask | (domain_series == d_clean) | domain_series.str.endswith("." + d_clean)
+
+        # 2) Regex rule match.
         for rule in client.rules:
             if rule.field not in out.columns:
                 continue
             col = out[rule.field].fillna("").astype(str)
             mask = mask | col.str.contains(rule.pattern, na=False, regex=True)
+
         mask = mask & still_unassigned
         assigned.loc[mask] = client.name
 
@@ -130,16 +166,32 @@ def filter_services(df: pd.DataFrame, exclude_groups: list[str]) -> pd.DataFrame
     return df[~group_col.isin(lowered)].copy()
 
 
-def filter_callbacks(df: pd.DataFrame, rule: dict | None) -> pd.DataFrame:
-    """Keep only rows matching the callback rule (a {field, match} dict)."""
-    if not rule or "field" not in rule or "match" not in rule:
+def filter_callbacks(df: pd.DataFrame, rule) -> pd.DataFrame:
+    """Keep only rows matching any callback rule.
+
+    Accepts:
+      - a single {field, match} dict (legacy)
+      - a list of {field, match} dicts — a row matches if ANY rule matches.
+    """
+    if not rule:
         return df.iloc[0:0].copy()
-    field = rule["field"]
-    if field not in df.columns:
+    rules_list = rule if isinstance(rule, list) else [rule]
+
+    mask = pd.Series([False] * len(df), index=df.index)
+    matched_any = False
+    for r in rules_list:
+        if not isinstance(r, dict) or "field" not in r or "match" not in r:
+            continue
+        field = r["field"]
+        if field not in df.columns:
+            continue
+        pattern = re.compile(r["match"], re.IGNORECASE | re.DOTALL)
+        col = df[field].fillna("").astype(str)
+        mask = mask | col.str.contains(pattern, na=False, regex=True)
+        matched_any = True
+
+    if not matched_any:
         return df.iloc[0:0].copy()
-    pattern = re.compile(rule["match"], re.IGNORECASE | re.DOTALL)
-    col = df[field].fillna("").astype(str)
-    mask = col.str.contains(pattern, na=False, regex=True)
     return df[mask].copy()
 
 
@@ -187,12 +239,26 @@ def unmapped_breakdown(df: pd.DataFrame, identifier_field: str = "Full name") ->
 def detect_month_label(df: pd.DataFrame, created_col: str = "Created time") -> str:
     """Return the dominant month in the export as 'Month YYYY'.
 
-    Falls back to an empty string if the column is missing or unparseable.
+    Fresh CRM exports use either ISO 'YYYY-MM-DD HH:MM:SS' or UK 'DD/MM/YYYY'
+    depending on tenant settings. We try the default parse first (handles ISO
+    correctly) and only fall back to dayfirst=True when the default leaves a
+    lot of unparseable rows — which happens with UK strings like '13/03/2026'
+    that the default reads as month 13 = NaT. Without this fallback, March
+    data uploaded as DD/MM gets misread as the wrong month.
     """
     if created_col not in df.columns or df.empty:
         return ""
-    parsed = pd.to_datetime(df[created_col], errors="coerce")
-    parsed = parsed.dropna()
+    raw = df[created_col]
+    total = len(raw.dropna())
+    default = pd.to_datetime(raw, errors="coerce").dropna()
+    parsed = default
+    # If the default parse loses more than 30% of rows, it's almost certainly
+    # a DD/MM tenant — retry dayfirst=True. Otherwise stick with the default
+    # parse (ISO/US dates that dayfirst would silently corrupt).
+    if total and len(default) < 0.7 * total:
+        uk = pd.to_datetime(raw, errors="coerce", dayfirst=True).dropna()
+        if len(uk) > len(default):
+            parsed = uk
     if parsed.empty:
         return ""
     most_common = parsed.dt.to_period("M").value_counts().idxmax()

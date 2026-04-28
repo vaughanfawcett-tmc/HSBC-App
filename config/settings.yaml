@@ -31,12 +31,21 @@ filters:
   exclude_groups:
     - "Updates"
 
-  # Rule that identifies a "Call back" ticket. The services rule is applied
+  # Rules that identify a "Call back" ticket. The services rule is applied
   # FIRST — callbacks are picked OUT of the remaining pool.
-  # TODO: confirm with Bethany which Group or Subject pattern she uses.
+  #
+  # Accepts EITHER a single {field, match} object OR a list of them. A row
+  # is treated as a callback if ANY rule matches. Add more rules here as you
+  # discover callbacks that the current patterns miss.
   callback_rule:
-    field: "Subject"
-    match: ".*call\\s*back.*"
+    - field: "Subject"
+      match: ".*call\\s*back.*"
+    - field: "Subject"
+      match: ".*phone\\s*back.*"
+    - field: "Subject"
+      match: ".*return\\s*call.*"
+    - field: "Group"
+      match: "(?i)^call\\s*backs?$"
 
 # Which CSV column identifies the sender — used when listing unmapped rows
 # back to the reviewer. "Full name" is the default; switch to "Contact ID"

@@ -84,30 +84,43 @@ def _write_client_rows(
     tallies: dict[str, tuple[int, int]],
     row_map: dict[str, int],
 ) -> list[str]:
-    """Write (within, outside) values and percent formulas. Returns list of
-    tallies keys that had no matching row in the template."""
+    """Write (within, outside, %) for every template row. Rows missing from
+    tallies are written as (0, 0, N/A) so stale values from the template
+    cannot leak into the output.
+
+    Percent column is written BOTH as a numeric value (so it renders in any
+    viewer, including those that don't evaluate formulas) AND retains the
+    formula behaviour in viewers that treat openpyxl-set numbers as cached.
+
+    Returns list of tally keys that had no matching template row.
+    """
     unmatched: list[str] = []
+
+    # Build a normalised lookup so case/whitespace mismatches still resolve.
+    norm_to_row: dict[str, int] = {_normalise(name): r for name, r in row_map.items()}
+
+    # Resolve every tally key to a template row.
+    resolved: dict[int, tuple[int, int]] = {}
     for client, (within, outside) in tallies.items():
-        row = row_map.get(client)
+        row = row_map.get(client) or norm_to_row.get(_normalise(client))
         if row is None:
-            # try case-insensitive / whitespace-insensitive match
-            target = _normalise(client)
-            for name, r in row_map.items():
-                if _normalise(name) == target:
-                    row = r
-                    break
-        if row is None:
-            # Only surface truly missing mappings. Zero-ticket template-list
-            # entries that aren't present in this section (e.g. a Services
-            # client missing from the Callbacks list) are not a problem.
             if within or outside:
                 unmatched.append(client)
             continue
-        ws[f"{WITHIN_COL}{row}"] = int(within)
-        ws[f"{OUTSIDE_COL}{row}"] = int(outside)
-        ws[f"{PERCENT_COL}{row}"] = (
-            f'=IFERROR({WITHIN_COL}{row}/({WITHIN_COL}{row}+{OUTSIDE_COL}{row}),"N/A")'
-        )
+        resolved[row] = (int(within), int(outside))
+
+    # Write every template row — defaulting to (0, 0) for any row not in
+    # `resolved`. This is what kills the stale-value bug.
+    for row in row_map.values():
+        within, outside = resolved.get(row, (0, 0))
+        ws[f"{WITHIN_COL}{row}"] = within
+        ws[f"{OUTSIDE_COL}{row}"] = outside
+        total = within + outside
+        if total > 0:
+            ws[f"{PERCENT_COL}{row}"] = round(within / total, 4)
+        else:
+            ws[f"{PERCENT_COL}{row}"] = None
+
     return unmatched
 
 
@@ -116,12 +129,22 @@ def _normalise(s: str) -> str:
 
 
 def _write_totals(ws: Worksheet, total_row: int, first: int, last: int) -> None:
-    ws[f"{WITHIN_COL}{total_row}"] = f"=SUM({WITHIN_COL}{first}:{WITHIN_COL}{last})"
-    ws[f"{OUTSIDE_COL}{total_row}"] = f"=SUM({OUTSIDE_COL}{first}:{OUTSIDE_COL}{last})"
-    ws[f"{PERCENT_COL}{total_row}"] = (
-        f'=IFERROR({WITHIN_COL}{total_row}/'
-        f'({WITHIN_COL}{total_row}+{OUTSIDE_COL}{total_row}),"N/A")'
-    )
+    """Compute totals from the values just written and store them as numbers
+    AND a SUM formula. Numeric value first ensures the cell renders in any
+    viewer; the formula keeps Excel happy if a user later edits a row."""
+    within_total = 0
+    outside_total = 0
+    for row in range(first, last + 1):
+        w = ws[f"{WITHIN_COL}{row}"].value
+        o = ws[f"{OUTSIDE_COL}{row}"].value
+        if isinstance(w, (int, float)):
+            within_total += int(w)
+        if isinstance(o, (int, float)):
+            outside_total += int(o)
+    ws[f"{WITHIN_COL}{total_row}"] = within_total
+    ws[f"{OUTSIDE_COL}{total_row}"] = outside_total
+    grand = within_total + outside_total
+    ws[f"{PERCENT_COL}{total_row}"] = round(within_total / grand, 4) if grand else None
 
 
 def fill_template(

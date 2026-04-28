@@ -45,10 +45,11 @@ def test_fill_template_writes_values_and_preserves_structure(tmp_path):
     # Title updated
     assert "April 2026" in str(ws["B2"].value)
 
-    # Row 7 TOTAL became a SUM formula (was originally a mix of formula and
-    # literal in the source; we always rewrite to a proper formula)
-    assert str(ws["C7"].value).startswith("=SUM")
-    assert str(ws["D7"].value).startswith("=SUM")
+    # Row 7 TOTAL is now written as a numeric value (was a SUM formula
+    # before — switched to value because some viewers don't evaluate
+    # formulas, which manifested as a blank %-column in production).
+    assert ws["C7"].value == 150 + 290 + 25  # within total
+    assert ws["D7"].value == 3 + 8 + 0       # outside total
 
     # Services rows written
     # Find Honeywell UK row
@@ -60,20 +61,22 @@ def test_fill_template_writes_values_and_preserves_structure(tmp_path):
     assert hw_row is not None
     assert ws[f"C{hw_row}"].value == 150
     assert ws[f"D{hw_row}"].value == 3
-    # Percent column is now a formula
-    pct = str(ws[f"E{hw_row}"].value)
-    assert pct.startswith("=IFERROR")
+    # Percent column is now a numeric value (0-1), not a formula.
+    pct = ws[f"E{hw_row}"].value
+    assert isinstance(pct, float)
+    assert abs(pct - 150 / 153) < 1e-3
 
-    # Clients not in the tallies still exist and haven't been deleted
-    any_client_row = None
+    # Clients not in the tallies should be cleared to (0, 0) so stale
+    # template values cannot leak through to the output.
+    other_row = None
     for r in range(8, 78):
         if ws[f"B{r}"].value == "4Com":
-            any_client_row = r
+            other_row = r
             break
-    assert any_client_row is not None
-    # 4Com was not in services dict - its C/D cells should be either the
-    # original value or blank; either way the row in column B is preserved.
-    assert ws[f"B{any_client_row}"].value == "4Com"
+    assert other_row is not None
+    assert ws[f"B{other_row}"].value == "4Com"
+    assert ws[f"C{other_row}"].value == 0
+    assert ws[f"D{other_row}"].value == 0
 
     # Callbacks section: Honeywell International should have 10 in Within
     cb_hw_row = None

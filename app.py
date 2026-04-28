@@ -19,6 +19,7 @@ import streamlit as st
 import audit
 import mailer
 import processor
+import run_history
 import template_writer
 
 ROOT = Path(__file__).parent
@@ -535,6 +536,11 @@ def _init_state() -> None:
         "send_error": None,
         "send_result": None,
         "device_flow_msg": None,
+        "run_id": None,
+        "archived_source_path": None,
+        "archived_output_path": None,
+        "show_reject_form": False,
+        "reject_error": None,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -650,15 +656,39 @@ def screen_upload() -> None:
             raw = uploaded.getvalue()
             summary, template_path = _process(raw, settings)
             out_path, out_bytes = _build_xlsx(summary, template_path, settings)
+            source_sha = audit.sha256_bytes(raw)
+            output_sha = audit.sha256_bytes(out_bytes)
+            run_id = run_history.make_run_id(source_sha)
+            try:
+                archived_src, archived_out = run_history.archive_run(
+                    run_id=run_id,
+                    source_filename=uploaded.name,
+                    source_bytes=raw,
+                    output_filename=Path(out_path).name,
+                    output_bytes=out_bytes,
+                )
+            except OSError as archive_err:
+                # Archive failure must not block the report — log but proceed.
+                archived_src = archived_out = None
+                st.session_state.upload_error = (
+                    f"Could not archive run files ({archive_err}); the report "
+                    "is still usable but file history may be incomplete."
+                )
+            st.session_state.run_id = run_id
+            st.session_state.archived_source_path = (
+                str(archived_src) if archived_src else None
+            )
+            st.session_state.archived_output_path = (
+                str(archived_out) if archived_out else None
+            )
             st.session_state.source_bytes = raw
             st.session_state.source_name = uploaded.name
-            st.session_state.source_sha = audit.sha256_bytes(raw)
+            st.session_state.source_sha = source_sha
             st.session_state.summary = summary
             st.session_state.month_label = summary.month_label
             st.session_state.output_path = str(out_path)
             st.session_state.output_bytes = out_bytes
-            st.session_state.output_sha = audit.sha256_bytes(out_bytes)
-            st.session_state.upload_error = None
+            st.session_state.output_sha = output_sha
             _go("review")
             st.rerun()
         except Exception as e:  # noqa: BLE001
@@ -833,20 +863,90 @@ def screen_review() -> None:
     st.markdown("<div class='soft-divider'></div>", unsafe_allow_html=True)
 
     # Actions
-    left, right = st.columns(2)
-    with left:
-        st.download_button(
-            "Download for review",
-            data=st.session_state.output_bytes,
-            file_name=Path(st.session_state.output_path).name,
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key="download_xlsx",
-            type="secondary",
-            use_container_width=True,
+    if st.session_state.show_reject_form:
+        st.markdown("<p class='section-title'>Reason for rejection</p>", unsafe_allow_html=True)
+        reason = st.text_area(
+            "Reason",
+            placeholder="What's wrong with this report? Be specific — wrong totals, missing client, broken date, anything else…",
+            label_visibility="collapsed",
+            height=140,
+            key="reject_reason",
         )
-    with right:
-        if st.button("Approve & send", key="send_btn", type="primary", use_container_width=True):
-            _do_send(settings)
+        if st.session_state.reject_error:
+            st.markdown(
+                f"<div class='error-card'>{svg_error()}"
+                f"<div>{st.session_state.reject_error}</div></div>",
+                unsafe_allow_html=True,
+            )
+        cancel_col, submit_col = st.columns(2)
+        with cancel_col:
+            if st.button("Cancel", key="reject_cancel", type="secondary", use_container_width=True):
+                st.session_state.show_reject_form = False
+                st.session_state.reject_error = None
+                st.rerun()
+        with submit_col:
+            if st.button("Submit feedback", key="reject_submit", type="primary", use_container_width=True):
+                _do_reject(settings, reason)
+    else:
+        download_col, send_col = st.columns(2)
+        with download_col:
+            st.download_button(
+                "Download for review",
+                data=st.session_state.output_bytes,
+                file_name=Path(st.session_state.output_path).name,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key="download_xlsx",
+                type="secondary",
+                use_container_width=True,
+            )
+        with send_col:
+            if st.button("Approve & send", key="send_btn", type="primary", use_container_width=True):
+                _do_send(settings)
+        if st.button("Reject this report", key="reject_btn", type="secondary", use_container_width=True):
+            st.session_state.show_reject_form = True
+            st.session_state.reject_error = None
+            st.rerun()
+
+
+def _do_reject(settings: dict, reason: str) -> None:
+    text = (reason or "").strip()
+    if len(text) < 10:
+        st.session_state.reject_error = "Add a few words explaining what's wrong (at least 10 characters)."
+        st.rerun()
+        return
+    summary = st.session_state.summary
+    svc_w, svc_o = summary.services_totals
+    cb_w, cb_o = summary.callbacks_totals
+    run_history.append_feedback(
+        run_id=st.session_state.run_id or "",
+        user_email="",
+        month_label=summary.month_label,
+        reason=text,
+    )
+    run_history.append_run_row({
+        "run_id": st.session_state.run_id or "",
+        "outcome": "rejected",
+        "month_label": summary.month_label,
+        "source_filename": st.session_state.source_name or "",
+        "source_csv_sha256": st.session_state.source_sha or "",
+        "output_xlsx_sha256": st.session_state.output_sha or "",
+        "services_total_within": svc_w,
+        "services_total_outside": svc_o,
+        "callbacks_total_within": cb_w,
+        "callbacks_total_outside": cb_o,
+        "unmapped_count": summary.unmapped_total,
+        "rejection_reason": text,
+        "source_path": st.session_state.archived_source_path or "",
+        "output_path": st.session_state.archived_output_path or "",
+    })
+    st.session_state.send_result = {
+        "outcome": "rejected",
+        "reason": text,
+        "when": datetime.now().strftime("%d %b %Y, %H:%M"),
+    }
+    st.session_state.show_reject_form = False
+    _go("done")
+    st.rerun()
 
 
 def _do_send(settings: dict) -> None:
@@ -930,6 +1030,24 @@ def _do_send(settings: dict) -> None:
             "graph_message_id": result.message_id,
         },
     )
+    run_history.append_run_row({
+        "run_id": st.session_state.run_id or "",
+        "outcome": "sent",
+        "month_label": summary.month_label,
+        "source_filename": st.session_state.source_name or "",
+        "source_csv_sha256": st.session_state.source_sha or "",
+        "output_xlsx_sha256": st.session_state.output_sha or "",
+        "services_total_within": svc_w,
+        "services_total_outside": svc_o,
+        "callbacks_total_within": cb_w,
+        "callbacks_total_outside": cb_o,
+        "unmapped_count": summary.unmapped_total,
+        "recipient": recipient,
+        "graph_message_id": result.message_id,
+        "user_email": result.user_email,
+        "source_path": st.session_state.archived_source_path or "",
+        "output_path": st.session_state.archived_output_path or "",
+    })
     st.session_state.send_result = {
         "message_id": result.message_id,
         "recipient": recipient,
@@ -943,19 +1061,41 @@ def _do_send(settings: dict) -> None:
 # ---------- screen 3: confirmation ----------
 def screen_done() -> None:
     r = st.session_state.send_result or {}
-    recipient = r.get("recipient", "recipient")
+    outcome = r.get("outcome", "sent")
     when = r.get("when", "")
-    msg_id = r.get("message_id", "")
 
-    st.markdown(
-        f"<div class='confirm-wrap'>"
-        f"{svg_check()}"
-        f"<p class='confirm-title'>Sent.</p>"
-        f"<p class='confirm-recipient'>{recipient}</p>"
-        f"<p class='confirm-meta'>{when}<br>Ref · {msg_id}</p>"
-        f"</div>",
-        unsafe_allow_html=True,
-    )
+    if outcome == "rejected":
+        reason = r.get("reason", "")
+        st.markdown(
+            f"<div class='confirm-wrap'>"
+            f"{svg_check()}"
+            f"<p class='confirm-title'>Feedback recorded.</p>"
+            f"<p class='confirm-recipient'>No email was sent.</p>"
+            f"<p class='confirm-meta'>{when}</p>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+        if reason:
+            st.markdown(
+                f"<div class='warn-card'>{svg_warning()}"
+                f"<div class='warn-body'>"
+                f"<p class='warn-title'>Reason captured</p>"
+                f"<p class='warn-text'>{reason}</p>"
+                f"</div></div>",
+                unsafe_allow_html=True,
+            )
+    else:
+        recipient = r.get("recipient", "recipient")
+        msg_id = r.get("message_id", "")
+        st.markdown(
+            f"<div class='confirm-wrap'>"
+            f"{svg_check()}"
+            f"<p class='confirm-title'>Sent.</p>"
+            f"<p class='confirm-recipient'>{recipient}</p>"
+            f"<p class='confirm-meta'>{when}<br>Ref · {msg_id}</p>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
     # Center the button
     _, col, _ = st.columns([1, 2, 1])
     with col:
